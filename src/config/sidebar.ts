@@ -48,6 +48,10 @@ export const menuItems: MenuItem[] = [
         title: "申请表",
         url: "/goods/application",
       },
+      {
+        title: "申请审批",
+        url: "/goods/approval",
+      },
     ],
   },
   {

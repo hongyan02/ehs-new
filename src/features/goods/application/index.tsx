@@ -26,6 +26,7 @@ import {
   useDeleteApplication,
   useCreateApplication,
   useUpdateApplication,
+  useSubmitApplication,
   type ApplicationData,
   type ApplicationPayload,
 } from "./query";
@@ -40,8 +41,11 @@ export default function ApplicationView() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [viewApplication, setViewApplication] = useState<ApplicationData | null>(null);
-  const [editApplication, setEditApplication] = useState<ApplicationData | null>(null);
+  const [submittingId, setSubmittingId] = useState<number | null>(null);
+  const [viewApplication, setViewApplication] =
+    useState<ApplicationData | null>(null);
+  const [editApplication, setEditApplication] =
+    useState<ApplicationData | null>(null);
 
   // 查询数据
   const { data, isLoading, error } = useApplications({
@@ -56,6 +60,7 @@ export default function ApplicationView() {
   const createMutation = useCreateApplication();
   // 更新mutation
   const updateMutation = useUpdateApplication();
+  const submitMutation = useSubmitApplication();
 
   const handleSearch = (params: SearchFormData) => {
     setSearchParams(params);
@@ -78,6 +83,26 @@ export default function ApplicationView() {
 
   const handleDelete = (id: number) => {
     setDeleteId(id);
+  };
+
+  const handleSubmitApplication = async (application: ApplicationData) => {
+    if (!application.id) return;
+    if (application.status !== 0 && application.status !== 1) {
+      toast.error("当前状态不可提交");
+      return;
+    }
+
+    setSubmittingId(application.id);
+    try {
+      await submitMutation.mutateAsync({ applicationId: application.id });
+      toast.success("提交成功");
+    } catch (error: any) {
+      console.error(error);
+      const message = error?.data?.message;
+      toast.error(typeof message === "string" ? message : "提交失败");
+    } finally {
+      setSubmittingId(null);
+    }
   };
 
   const confirmDelete = async () => {
@@ -120,11 +145,17 @@ export default function ApplicationView() {
   const getStatusText = (status: number) => {
     switch (status) {
       case 0:
-        return "待审核";
+        return "未提交";
       case 1:
-        return "已批准";
+        return "已保存";
       case 2:
+        return "待审核";
+      case 3:
+        return "已完成";
+      case 4:
         return "已驳回";
+      case 5:
+        return "废弃";
       default:
         return "未知";
     }
@@ -133,11 +164,17 @@ export default function ApplicationView() {
   const getStatusVariant = (status: number) => {
     switch (status) {
       case 0:
-        return "secondary";
+        return "outline";
       case 1:
-        return "default";
+        return "secondary";
       case 2:
+        return "default";
+      case 3:
+        return "default";
+      case 4:
         return "destructive";
+      case 5:
+        return "outline";
       default:
         return "outline";
     }
@@ -164,9 +201,10 @@ export default function ApplicationView() {
         <>
           <ApplicationTable
             data={data?.data || []}
-            onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onSubmit={handleSubmitApplication}
+            submittingId={submittingId}
           />
 
           {/* 分页器 */}
@@ -234,7 +272,7 @@ export default function ApplicationView() {
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除？</AlertDialogTitle>
             <AlertDialogDescription>
-              此操作无法撤销。这将永久删除该申请单记录。
+              此操作将把申请单标记为废弃，无法恢复。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -266,13 +304,18 @@ export default function ApplicationView() {
                   <span className="text-sm font-medium text-gray-600">
                     申请单号：
                   </span>
-                  <span className="text-sm">{viewApplication.applicationCode}</span>
+                  <span className="text-sm">
+                    {viewApplication.applicationCode}
+                  </span>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-600">
                     状态：
                   </span>
-                  <Badge variant={getStatusVariant(viewApplication.status) as any} className="ml-2">
+                  <Badge
+                    variant={getStatusVariant(viewApplication.status) as any}
+                    className="ml-2"
+                  >
                     {getStatusText(viewApplication.status)}
                   </Badge>
                 </div>
@@ -306,7 +349,9 @@ export default function ApplicationView() {
                   <span className="text-sm font-medium text-gray-600">
                     申请时间：
                   </span>
-                  <span className="text-sm">{viewApplication.applicationTime}</span>
+                  <span className="text-sm">
+                    {viewApplication.applicationTime}
+                  </span>
                 </div>
                 {viewApplication.origin && (
                   <div>
@@ -337,19 +382,25 @@ export default function ApplicationView() {
                       <span className="text-sm font-medium text-gray-600">
                         审批人：
                       </span>
-                      <span className="text-sm">{viewApplication.approver}</span>
+                      <span className="text-sm">
+                        {viewApplication.approver}
+                      </span>
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-600">
                         审批人工号：
                       </span>
-                      <span className="text-sm">{viewApplication.approverNo}</span>
+                      <span className="text-sm">
+                        {viewApplication.approverNo}
+                      </span>
                     </div>
                     <div className="col-span-2">
                       <span className="text-sm font-medium text-gray-600">
                         审批时间：
                       </span>
-                      <span className="text-sm">{viewApplication.approveTime}</span>
+                      <span className="text-sm">
+                        {viewApplication.approveTime}
+                      </span>
                     </div>
                   </div>
                 </div>

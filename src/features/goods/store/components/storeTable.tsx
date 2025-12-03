@@ -9,10 +9,13 @@ import {
 import type { ColumnDef } from "@tanstack/react-table";
 import type { MaterialData } from "../query/api";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 const column = createColumnHelper<MaterialData>();
 
-export const storeColumns: ColumnDef<MaterialData, any>[] = [
+export const createStoreColumns = (
+  onEdit: (material: MaterialData) => void,
+): ColumnDef<MaterialData, any>[] => [
   column.accessor("materialCode", {
     header: "物料编码",
     cell: (info) => info.getValue(),
@@ -65,16 +68,32 @@ export const storeColumns: ColumnDef<MaterialData, any>[] = [
     header: "更新时间",
     cell: (info) => info.getValue(),
   }),
+  column.display({
+    id: "actions",
+    header: "操作",
+    cell: (info) => (
+      <Button
+        size="sm"
+        variant="ghost"
+        className="text-blue-600 hover:text-blue-800"
+        onClick={() => onEdit(info.row.original)}
+      >
+        编辑
+      </Button>
+    ),
+  }),
 ];
 
 interface StoreTableProps {
   data: MaterialData[];
+  onEdit: (material: MaterialData) => void;
 }
 
-export default function StoreTable({ data }: StoreTableProps) {
+export default function StoreTable({ data, onEdit }: StoreTableProps) {
+  const columns = createStoreColumns(onEdit);
   const table = useReactTable({
     data,
-    columns: storeColumns,
+    columns,
     getCoreRowModel: getCoreRowModel(),
   });
 
@@ -122,7 +141,7 @@ export default function StoreTable({ data }: StoreTableProps) {
             ))
           ) : (
             <tr>
-              <td colSpan={storeColumns.length} className="h-24 text-center">
+              <td colSpan={columns.length} className="h-24 text-center">
                 暂无数据
               </td>
             </tr>

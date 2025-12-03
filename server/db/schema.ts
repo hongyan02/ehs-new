@@ -148,7 +148,7 @@ export const application = sqliteTable("application", {
   // 用途说明
   purpose: text("purpose"),
 
-  // 状态：0=待审核，1=已批准，2=已驳回
+  // 状态：0=未提交 1=已保存 2=待审核，3=已完成，4=已驳回 5=废弃
   status: integer("status").notNull().default(0),
 
   // 创建时间（使用文本 YYYY-MM-DD hh-mm-ss）

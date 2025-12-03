@@ -98,9 +98,12 @@ export default function SearchForm({ onSearch, onReset }: SearchFormProps) {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">全部</SelectItem>
-                            <SelectItem value="0">待审核</SelectItem>
-                            <SelectItem value="1">已批准</SelectItem>
-                            <SelectItem value="2">已驳回</SelectItem>
+                            <SelectItem value="0">未提交</SelectItem>
+                            <SelectItem value="1">已保存</SelectItem>
+                            <SelectItem value="2">待审核</SelectItem>
+                            <SelectItem value="3">已完成</SelectItem>
+                            <SelectItem value="4">已驳回</SelectItem>
+                            <SelectItem value="5">废弃</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>

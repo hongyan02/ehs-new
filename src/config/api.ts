@@ -26,8 +26,16 @@ export const API_SERVICE = {
   materialStore: {
     store: process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/goods/store", //CRUD操作
   },
+  materialLog: {
+    log: process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/goods/materialLog", //操作记录
+  },
   //物资申请
   application: {
-    application: process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/goods/application", //CRUD操作
+    application:
+      process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/goods/application", //CRUD操作
+    pending:
+      process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/goods/application/pending", //待审核列表
+    applicationDetail:
+      process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/goods/applicationDetail", //申请明细
   },
 };

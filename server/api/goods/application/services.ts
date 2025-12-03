@@ -150,8 +150,3 @@ export const updateApplication = async (params: UpdateApplicationParams) => {
 
     return result[0];
 };
-
-export const deleteApplication = async (id: number) => {
-    const result = await db.delete(application).where(eq(application.id, id)).returning();
-    return result[0];
-};
