@@ -31,6 +31,10 @@ export const menuItems: MenuItem[] = [
         url: "/dutyManagement/dutyLog",
       },
       {
+        title: "换班申请",
+        url: "/dutyManagement/dutyChange"
+      },
+      {
         title: "值班表",
         url: "/dutyManagement/dutySchedule",
       },

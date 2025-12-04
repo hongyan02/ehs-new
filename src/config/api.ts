@@ -19,8 +19,9 @@ export const API_SERVICE = {
   //值班表
   dutySchedule: {
     getDutySchedule:
-      process.env.NEXT_PUBLIC_API_CONFIG + "/duty-schedules/query", //查询值班表
-    dutySchedule: process.env.NEXT_PUBLIC_API_CONFIG + "/duty-schedules", //(新增、更新、删除)值班表
+      process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/dutySchedule", //查询值班表
+    dutySchedule: process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/dutySchedule", //(新增、更新、删除)值班表
+    batch: process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/dutySchedule/batch", //批量保存
   },
   //物资库存
   materialStore: {
@@ -37,5 +38,9 @@ export const API_SERVICE = {
       process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/goods/application/pending", //待审核列表
     applicationDetail:
       process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/goods/applicationDetail", //申请明细
+  },
+  //换班申请
+  dutyChange: {
+    change: process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/dutySchedule/change", //换班申请 CRUD
   },
 };

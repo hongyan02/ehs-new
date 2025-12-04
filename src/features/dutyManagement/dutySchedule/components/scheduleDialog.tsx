@@ -1,0 +1,303 @@
+"use client";
+
+import { useEffect, useMemo } from "react";
+import { useForm, useFieldArray, Control } from "react-hook-form";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { AutoComplete, Option } from "@/components/autoCompleteSelect";
+import { Plus, Trash2 } from "lucide-react";
+import { useAllDutyPersons, DutyScheduleItem } from "../query/index";
+
+type ScheduleFormValues = {
+  day: {
+    dutyLeader: Option[];
+    shiftCadre: Option[];
+    safetyManager: Option[];
+    safetyOfficer: Option[];
+  };
+  night: {
+    dutyLeader: Option[];
+    safetyManager: Option[];
+    safetyOfficer: Option[];
+  };
+};
+
+type ScheduleDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  date: string;
+  initialData?: DutyScheduleItem[];
+  onSave: (data: ScheduleFormValues) => void;
+};
+
+export function ScheduleDialog({
+  open,
+  onOpenChange,
+  date,
+  initialData,
+  onSave,
+}: ScheduleDialogProps) {
+  const { data: allPersons } = useAllDutyPersons();
+
+  const employeeOptions: Option[] = useMemo(() => {
+    return (allPersons ?? []).map((p: any) => ({
+      value: String(p.id),
+      label: p.name,
+      position: p.position,
+      no: p.no,
+    }));
+  }, [allPersons]);
+
+  const form = useForm<ScheduleFormValues>({
+    defaultValues: {
+      day: {
+        dutyLeader: [],
+        shiftCadre: [],
+        safetyManager: [],
+        safetyOfficer: [],
+      },
+      night: {
+        dutyLeader: [],
+        safetyManager: [],
+        safetyOfficer: [],
+      },
+    },
+  });
+
+  const { handleSubmit, control, reset } = form;
+
+  useEffect(() => {
+    if (open) {
+      if (!initialData || initialData.length === 0) {
+        // 无初始数据，重置为空表单
+        reset({
+          day: {
+            dutyLeader: [],
+            shiftCadre: [],
+            safetyManager: [],
+            safetyOfficer: [],
+          },
+          night: {
+            dutyLeader: [],
+            safetyManager: [],
+            safetyOfficer: [],
+          },
+        });
+      } else {
+        // 有初始数据，转换为表单格式
+        const dayShift = initialData.filter(
+          (item) => String(item.shift) === "0",
+        );
+        const nightShift = initialData.filter(
+          (item) => String(item.shift) === "1",
+        );
+
+        const mapToOption = (item: DutyScheduleItem): Option => {
+          const found =
+            employeeOptions.find(
+              (opt) => opt.no === item.no || opt.label === item.name,
+            ) ?? null;
+          return (
+            found || {
+              value: item.no || item.name,
+              label: item.name,
+              position: item.position,
+              no: item.no || "",
+            }
+          );
+        };
+
+        const buildRoleOptions = (items: DutyScheduleItem[]) => ({
+          dutyLeader: items
+            .filter((item) => item.position === "值班领导")
+            .map(mapToOption),
+          shiftCadre: items
+            .filter((item) => item.position === "带班干部")
+            .map(mapToOption),
+          safetyManager: items
+            .filter((item) => item.position === "安全管理人员")
+            .map(mapToOption),
+          safetyOfficer: items
+            .filter((item) => item.position === "安全员")
+            .map(mapToOption),
+        });
+
+        const dayRoles = buildRoleOptions(dayShift);
+        const nightRoles = buildRoleOptions(nightShift);
+
+        reset({
+          day: {
+            dutyLeader: dayRoles.dutyLeader,
+            shiftCadre: dayRoles.shiftCadre,
+            safetyManager: dayRoles.safetyManager,
+            safetyOfficer: dayRoles.safetyOfficer,
+          },
+          night: {
+            dutyLeader: nightRoles.dutyLeader,
+            safetyManager: nightRoles.safetyManager,
+            safetyOfficer: nightRoles.safetyOfficer,
+          },
+        });
+      }
+    }
+  }, [open, date, reset, initialData, employeeOptions]);
+
+  const onSubmit = (data: ScheduleFormValues) => {
+    onSave(data);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>排班安排 - {date}</DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* 白班 */}
+            <div className="space-y-4 border p-4 rounded-lg bg-sky-50/50">
+              <h3 className="font-semibold text-lg text-sky-700 flex items-center gap-2">
+                <span className="w-2 h-6 bg-sky-500 rounded-full"></span>
+                白班
+              </h3>
+
+              <RoleSection
+                control={control}
+                name="day.dutyLeader"
+                label="值班领导"
+                options={employeeOptions}
+              />
+              <RoleSection
+                control={control}
+                name="day.shiftCadre"
+                label="带班干部"
+                options={employeeOptions}
+              />
+              <RoleSection
+                control={control}
+                name="day.safetyManager"
+                label="安全管理人员"
+                options={employeeOptions}
+              />
+              <RoleSection
+                control={control}
+                name="day.safetyOfficer"
+                label="安全员"
+                options={employeeOptions}
+              />
+            </div>
+
+            {/* 夜班 */}
+            <div className="space-y-4 border p-4 rounded-lg bg-indigo-50/50">
+              <h3 className="font-semibold text-lg text-indigo-700 flex items-center gap-2">
+                <span className="w-2 h-6 bg-indigo-500 rounded-full"></span>
+                夜班
+              </h3>
+
+              <RoleSection
+                control={control}
+                name="night.dutyLeader"
+                label="值班领导"
+                options={employeeOptions}
+              />
+              <RoleSection
+                control={control}
+                name="night.safetyManager"
+                label="安全管理人员"
+                options={employeeOptions}
+              />
+              <RoleSection
+                control={control}
+                name="night.safetyOfficer"
+                label="安全员"
+                options={employeeOptions}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              取消
+            </Button>
+            <Button type="submit">保存</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+type RoleSectionProps = {
+  control: Control<ScheduleFormValues>;
+  name: any; // Path to the array
+  label: string;
+  options: Option[];
+};
+
+function RoleSection({ control, name, label, options }: RoleSectionProps) {
+  const { fields, append, remove, update } = useFieldArray({
+    control,
+    name,
+  });
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium text-gray-700">{label}</Label>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-6 px-2 text-primary hover:bg-primary/10"
+          onClick={() => append({ label: "", value: "" })}
+        >
+          <Plus className="w-3 h-3 mr-1" />
+          添加
+        </Button>
+      </div>
+
+      <div className="space-y-2">
+        {fields.map((field, index) => (
+          <div key={field.id} className="flex items-center gap-2">
+            <div className="flex-1">
+              <AutoComplete
+                options={options}
+                value={field as unknown as Option}
+                onValueChange={(val) => update(index, val)}
+                placeholder={`选择${label}`}
+                emptyMessage="未找到人员"
+              />
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-muted-foreground hover:text-destructive"
+              onClick={() => remove(index)}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        ))}
+        {fields.length === 0 && (
+          <div className="text-xs text-muted-foreground italic px-2 py-1 bg-white/50 rounded border border-dashed">
+            暂无人员
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

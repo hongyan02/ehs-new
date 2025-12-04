@@ -1,36 +1,62 @@
-import { useQuery } from "@tanstack/react-query";
-import { getDutySchedule } from "./api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getDutySchedule, getAllDutyPersons, createDutySchedule } from "./api";
 import type { AxiosResponse } from "axios";
 
-type DutyScheduleQuery = { start_duty_date: string; end_duty_date: string };
-
-export type Employee = {
-  employee_id: string;
-  employee_name: string;
-  phone: string;
-  position: string;
+export type DutyScheduleQuery = {
+  start_duty_date: string;
+  end_duty_date: string;
 };
 
 export type DutyScheduleItem = {
-  duty_date: string;
-  employees: Employee[];
   id: number;
-  shift_type: string;
-  week: number;
+  date: string;
+  shift: number | string; // 0: day, 1: night
+  name: string;
+  no: string;
+  position: string;
 };
 
 type DutyScheduleApiResponse = {
   data: DutyScheduleItem[];
-  message: string;
+  message?: string;
+  success?: boolean;
 };
 
-export const useDutySchedule = (params?: DutyScheduleQuery) => {
+type UseDutyScheduleOptions = {
+  enabled?: boolean;
+};
+
+export const useDutySchedule = (
+  params?: DutyScheduleQuery,
+  options?: UseDutyScheduleOptions,
+) => {
   return useQuery<DutyScheduleItem[]>({
     queryKey: ["dutySchedule", params],
     queryFn: async () => {
       const res: AxiosResponse<DutyScheduleApiResponse> =
         await getDutySchedule(params);
       return res.data.data;
+    },
+    enabled: options?.enabled ?? true,
+  });
+};
+
+export const useAllDutyPersons = () => {
+  return useQuery({
+    queryKey: ["allDutyPersons"],
+    queryFn: async () => {
+      const res = await getAllDutyPersons();
+      return res.data.data.data;
+    },
+  });
+};
+
+export const useCreateDutySchedule = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createDutySchedule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dutySchedule"] });
     },
   });
 };

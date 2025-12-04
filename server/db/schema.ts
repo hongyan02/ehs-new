@@ -43,6 +43,36 @@ export const dutySchedule = sqliteTable("dutySchedule", {
   position: text("position"),
 });
 
+//换班表
+export const dutySwap = sqliteTable("dutySwap", {
+  // 主键
+  id: integer("id").primaryKey({ autoIncrement: true }),
+
+  // 换班人（发起换班的人）
+  from_name: text("from_name").notNull(), // 换班人姓名
+  from_no: text("from_no").notNull(), // 换班人工号
+  from_position: text("from_position").notNull(), // 换班人职位
+  from_date: text("from_date").notNull(), // 换班日期：YYYY-MM-DD
+  from_shift: integer("from_shift").notNull(), // 换班人班次：0=白班，1=夜班
+
+  // 被换人（顶班/与之互换的人）
+  to_name: text("to_name").notNull(), // 被换人姓名
+  to_no: text("to_no").notNull(), // 被换人工号
+  to_position: text("to_position").notNull(), // 被换人职位
+  to_date: text("to_date").notNull(), // 被换日期：YYYY-MM-DD
+  to_shift: integer("to_shift").notNull(), // 被换人班次：0=白班，1=夜班
+
+  // 状态：0=申请中，1=已同意，2=已拒绝，3=已取消
+  status: integer("status").notNull().default(0),
+
+  // 原因说明
+  reason: text("reason"),
+
+  // 创建时间 & 更新时间（YYYY-MM-DD hh-mm-ss）
+  created_at: text("created_at").notNull(),
+  updated_at: text("updated_at").notNull(),
+});
+
 //值班日志库
 export const dutyLog = sqliteTable("dutyLog", {
   id: integer("id").primaryKey({ autoIncrement: true }),

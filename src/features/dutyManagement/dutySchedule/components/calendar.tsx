@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
 // import { CalendarApi } from "@fullcalendar/core";
-import { DutyScheduleItem, Employee } from "../query/index";
+import { DutyScheduleItem, useCreateDutySchedule } from "../query/index";
 import { cn } from "@/utils/index";
 import zhCnLocale from "@fullcalendar/core/locales/zh-cn";
 import type { EventContentArg } from "@fullcalendar/core";
+import { ScheduleDialog } from "./ScheduleDialog";
+import { toast } from "sonner";
 
 type CalendarProps = {
   data: DutyScheduleItem[];
@@ -21,6 +24,12 @@ export default function Calendar({
 }: CalendarProps) {
   const calendarRef = useRef<FullCalendar | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>("");
+
+  const createMutation = useCreateDutySchedule();
+
   //后翻页
   // function goNext() {
   //   const api: CalendarApi | undefined = calendarRef.current?.getApi();
@@ -32,22 +41,38 @@ export default function Calendar({
   //   api?.prev();
   // }
 
-  const filteredData = shiftFilter
-    ? (data ?? []).filter((item) => item.shift_type === shiftFilter)
-    : (data ?? []);
+  const events = useMemo(() => {
+    const filteredData = shiftFilter
+      ? (data ?? []).filter((item) => String(item.shift) === shiftFilter)
+      : (data ?? []);
 
-  const events = (filteredData ?? []).map((item) => ({
-    id: String(item.id),
-    start: item.duty_date, // "YYYY-MM-DD"
-    allDay: true,
-    title: item.shift_type === "0" ? "白班" : "夜班",
-    extendedProps: {
-      shiftType: item.shift_type,
-      employees: item.employees ?? [],
-    },
-    backgroundColor: "transparent",
-    borderColor: "transparent",
-  }));
+    const grouped = new Map<
+      string,
+      { date: string; shift: string; employees: DutyScheduleItem[] }
+    >();
+
+    (filteredData ?? []).forEach((item) => {
+      const shiftStr = String(item.shift);
+      const key = `${item.date}-${shiftStr}`;
+      if (!grouped.has(key)) {
+        grouped.set(key, { date: item.date, shift: shiftStr, employees: [] });
+      }
+      grouped.get(key)?.employees.push(item);
+    });
+
+    return Array.from(grouped.entries()).map(([key, value]) => ({
+      id: key,
+      start: value.date, // "YYYY-MM-DD"
+      allDay: true,
+      title: value.shift === "0" ? "白班" : "夜班",
+      extendedProps: {
+        shift: value.shift,
+        employees: value.employees ?? [],
+      },
+      backgroundColor: "transparent",
+      borderColor: "transparent",
+    }));
+  }, [data, shiftFilter]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -58,11 +83,65 @@ export default function Calendar({
     return () => observer.disconnect();
   }, []);
 
+  const handleDateClick = (arg: { dateStr: string }) => {
+    setSelectedDate(arg.dateStr);
+    setDialogOpen(true);
+  };
+
+  const currentDateData = useMemo(() => {
+    return (data ?? []).filter((item) => item.date === selectedDate);
+  }, [data, selectedDate]);
+
+  const handleSaveSchedule = async (formData: any) => {
+    // 转换表单数据为API所需格式
+    const scheduleItems: any[] = [];
+
+    // 处理白班数据
+    const dayShift = formData.day;
+    Object.entries(dayShift).forEach(([role, employees]: [string, any]) => {
+      (employees || []).forEach((emp: any) => {
+        scheduleItems.push({
+          date: selectedDate,
+          shift: 0,
+          name: emp.label,
+          no: emp.no,
+          position: emp.position,
+        });
+      });
+    });
+
+    // 处理夜班数据
+    const nightShift = formData.night;
+    Object.entries(nightShift).forEach(([role, employees]: [string, any]) => {
+      (employees || []).forEach((emp: any) => {
+        scheduleItems.push({
+          date: selectedDate,
+          shift: 1,
+          name: emp.label,
+          no: emp.no,
+          position: emp.position,
+        });
+      });
+    });
+
+    // 调用API保存
+    try {
+      for (const item of scheduleItems) {
+        await createMutation.mutateAsync(item);
+      }
+      toast.success("排班保存成功");
+      setDialogOpen(false);
+    } catch (error) {
+      toast.error("排班保存失败");
+      console.error("Save schedule error:", error);
+    }
+  };
+
   return (
-    <div ref={containerRef} className="h-full w-full">
+    <div ref={containerRef} className="h-full w-full relative">
       <FullCalendar
         ref={calendarRef}
-        plugins={[dayGridPlugin]}
+        plugins={[dayGridPlugin, interactionPlugin]}
         initialView="dayGridMonth"
         events={events}
         eventContent={renderEventContent}
@@ -73,7 +152,16 @@ export default function Calendar({
         locale="zh-cn"
         height="100%"
         contentHeight="auto"
+        dateClick={handleDateClick}
         {...props}
+      />
+
+      <ScheduleDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        date={selectedDate}
+        initialData={currentDateData}
+        onSave={handleSaveSchedule}
       />
     </div>
   );
@@ -81,20 +169,20 @@ export default function Calendar({
 
 //自定义渲染日期格
 function renderEventContent(arg: EventContentArg) {
-  const { shiftType, employees } = arg.event.extendedProps as {
-    shiftType: "0" | "1";
-    employees: Employee[];
+  const { shift, employees } = arg.event.extendedProps as {
+    shift: string | number;
+    employees: DutyScheduleItem[];
   };
 
   const employeeList = employees ?? [];
-  const isDay = shiftType === "0";
+  const isDay = String(shift) === "0";
 
   return (
-    <div className="w-full">
+    <div className="w-full cursor-pointer">
       <ul className="mt-1">
         {employeeList.map((e, i) => (
           <li
-            key={`${e.employee_name}-${i}`}
+            key={`${e.no || e.name}-${i}`}
             className={cn(
               "group flex items-center gap-0.5 rounded-lg px-2 py-0.5 ",
               // isDay
@@ -116,7 +204,7 @@ function renderEventContent(arg: EventContentArg) {
                   : "bg-indigo-900/40 text-black",
               )}
             >
-              {TranslatePosition(e.position)}
+              {e.position}
             </span>
             <span
               className={cn(
@@ -124,26 +212,11 @@ function renderEventContent(arg: EventContentArg) {
                 isDay ? "text-slate-800" : "text-black",
               )}
             >
-              {e.employee_name}
+              {e.name}
             </span>
           </li>
         ))}
       </ul>
     </div>
   );
-}
-
-//翻译英文字段名
-const POSITION_MAP: Record<string, string> = {
-  dayDutyLeader: "值班领导",
-  nightDutyLeader: "值班领导",
-  dayDutyManager: "带班干部",
-  nightDutyManager: "带班干部",
-  daySafetyManager: "安全管理人员",
-  nightSafetyManager: "安全管理人员",
-  nightSafetyOfficer: "安全员",
-  daySafetyOfficer: "安全员",
-};
-export function TranslatePosition(position: string): string {
-  return POSITION_MAP[position] ?? "";
 }
