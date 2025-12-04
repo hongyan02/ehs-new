@@ -38,10 +38,9 @@ import { useSidebar } from "@/components/ui/sidebar";
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { username, nickname, deptName } = useInfo();
+  const { username, nickname, deptName, permissions } = useInfo();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
   const { state } = useSidebar();
-  console.log(username, nickname, deptName);
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -73,9 +72,25 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => {
+                // 1. Check parent permission
+                if (item.require && !permissions.includes(item.require)) {
+                  return null;
+                }
+
                 if (item.items) {
+                  // 2. Filter child items
+                  const filteredItems = item.items.filter(
+                    (subItem) =>
+                      !subItem.require || permissions.includes(subItem.require)
+                  );
+
+                  // If no children left, don't render parent
+                  if (filteredItems.length === 0) {
+                    return null;
+                  }
+
                   // 检查是否有子菜单项被激活
-                  const hasActiveSubItem = item.items.some(
+                  const hasActiveSubItem = filteredItems.some(
                     (subItem) => pathname === subItem.url,
                   );
                   return (
@@ -98,7 +113,7 @@ export function AppSidebar() {
                         </CollapsibleTrigger>
                         <CollapsibleContent>
                           <SidebarMenuSub>
-                            {item.items.map((subItem) => {
+                            {filteredItems.map((subItem) => {
                               const isSubActive = pathname === subItem.url;
                               return (
                                 <SidebarMenuSubItem key={subItem.title}>

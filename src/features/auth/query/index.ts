@@ -16,14 +16,15 @@ export function useLogin() {
       console.log("login success:", data);
       Cookies.set("token", data.token);
       try {
-        const userInfo = await queryClient.fetchQuery({
-          queryKey: ["userInfo"],
-          queryFn: getUserInfo,
-        });
+        // const userInfo = await queryClient.fetchQuery({
+        //   queryKey: ["userInfo"],
+        //   queryFn: getUserInfo,
+        // });
         setInfo({
-          username: userInfo.userName,
-          nickname: userInfo.nickName,
-          deptName: userInfo.deptName,
+          username: data.user.employeeId,
+          nickname: data.user.name,
+          permissions: data.user.permissions,
+          // deptName: userInfo.deptName, // API response doesn't have deptName currently, might need to fetch if needed
         });
         // 3. 拿到用户信息后再跳转
         router.push("/");

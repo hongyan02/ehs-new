@@ -131,8 +131,13 @@ export default function Calendar({
       }
       toast.success("排班保存成功");
       setDialogOpen(false);
-    } catch (error) {
-      toast.error("排班保存失败");
+    } catch (error: any) {
+
+      const errorMessage =
+        error?.data?.error ||
+        "排班保存失败";
+
+      toast.error(errorMessage);
       console.error("Save schedule error:", error);
     }
   };

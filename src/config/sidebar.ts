@@ -8,7 +8,9 @@ export interface MenuItem {
   items?: {
     title: string;
     url: string;
+    require?: string;
   }[];
+  require?: string;
 }
 
 // 主导航菜单配置
@@ -30,6 +32,7 @@ export const menuItems: MenuItem[] = [
       {
         title: "值班人员管理",
         url: "/dutyManagement/dutyPerson",
+        require: "DUTY",
       },
       {
         title: "值班日志",

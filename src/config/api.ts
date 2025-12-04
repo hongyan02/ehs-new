@@ -1,7 +1,7 @@
 export const API_SERVICE = {
     //登陆
     login: {
-        login: process.env.NEXT_PUBLIC_API_CONFIG_IMS + "/login", //登陆
+        login: "/api/auth/login", //登陆
         logout: process.env.NEXT_PUBLIC_API_CONFIG_IMS + "/logout", //登出
     },
     //用户信息相关

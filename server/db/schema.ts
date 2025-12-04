@@ -259,3 +259,12 @@ export const materialLog = sqliteTable("material_log", {
   //时间（使用文本 YYYY-MM-DD hh-mm-ss）
   time: text("time").notNull(),
 });
+
+// 用户权限表
+export const userPermission = sqliteTable("user_permission", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  employeeId: text("employee_id").unique().notNull(),
+  permissions: text("permissions").notNull(), // JSON string of string[]
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});

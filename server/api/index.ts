@@ -7,8 +7,11 @@ import goodsStoreRoute from "./goods/store/route";
 import applicationRoute from "./goods/application/route";
 import applicationDetailRoute from "./goods/applicationDetail/route";
 import materialLogRoute from "./goods/materialLog/route";
+import authRoute from "./auth/route";
 
 const app = new Hono().basePath("/api");
+
+app.route("/auth", authRoute);
 
 app.route("/webhook", webhookDutyLogRoute);
 app.route("/dutyLog", dutyLogRoute);

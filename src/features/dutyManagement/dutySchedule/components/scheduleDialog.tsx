@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { AutoComplete, Option } from "@/components/autoCompleteSelect";
 import { Plus, Trash2 } from "lucide-react";
-import { useAllDutyPersons, DutyScheduleItem } from "../query/index";
+import { useAllDutyPersons, DutyScheduleItem, useDeleteDutySchedule } from "../query/index";
+import { toast } from "sonner";
 
 type ScheduleFormValues = {
   day: {
@@ -45,6 +46,7 @@ export function ScheduleDialog({
   onSave,
 }: ScheduleDialogProps) {
   const { data: allPersons } = useAllDutyPersons();
+  const deleteMutation = useDeleteDutySchedule();
 
   const employeeOptions: Option[] = useMemo(() => {
     return (allPersons ?? []).map((p: any) => ({
@@ -104,16 +106,26 @@ export function ScheduleDialog({
             employeeOptions.find(
               (opt) => opt.no === item.no || opt.label === item.name,
             ) ?? null;
-          return (
-            found || {
-              value: item.no || item.name,
-              label: item.name,
-              position: item.position,
-              no: item.no || "",
-            }
-          );
-        };
 
+          // 使用数据库记录的 ID 作为 value 和 id
+          if (found) {
+            const result = {
+              ...found,
+              value: String(item.id), // 使用排班记录ID作为value
+              id: String(item.id), // 保持ID一致
+            };
+            return result;
+          }
+
+          const result = {
+            value: String(item.id), // 使用排班记录ID作为value
+            label: item.name,
+            position: item.position,
+            no: item.no || "",
+            id: String(item.id),
+          };
+          return result;
+        };
         const buildRoleOptions = (items: DutyScheduleItem[]) => ({
           dutyLeader: items
             .filter((item) => item.position === "值班领导")
@@ -175,24 +187,28 @@ export function ScheduleDialog({
                 name="day.dutyLeader"
                 label="值班领导"
                 options={employeeOptions}
+                onDelete={deleteMutation}
               />
               <RoleSection
                 control={control}
                 name="day.shiftCadre"
                 label="带班干部"
                 options={employeeOptions}
+                onDelete={deleteMutation}
               />
               <RoleSection
                 control={control}
                 name="day.safetyManager"
                 label="安全管理人员"
                 options={employeeOptions}
+                onDelete={deleteMutation}
               />
               <RoleSection
                 control={control}
                 name="day.safetyOfficer"
                 label="安全员"
                 options={employeeOptions}
+                onDelete={deleteMutation}
               />
             </div>
 
@@ -208,18 +224,21 @@ export function ScheduleDialog({
                 name="night.dutyLeader"
                 label="值班领导"
                 options={employeeOptions}
+                onDelete={deleteMutation}
               />
               <RoleSection
                 control={control}
                 name="night.safetyManager"
                 label="安全管理人员"
                 options={employeeOptions}
+                onDelete={deleteMutation}
               />
               <RoleSection
                 control={control}
                 name="night.safetyOfficer"
                 label="安全员"
                 options={employeeOptions}
+                onDelete={deleteMutation}
               />
             </div>
           </div>
@@ -245,9 +264,10 @@ type RoleSectionProps = {
   name: any; // Path to the array
   label: string;
   options: Option[];
+  onDelete: any; // Delete mutation
 };
 
-function RoleSection({ control, name, label, options }: RoleSectionProps) {
+function RoleSection({ control, name, label, options, onDelete }: RoleSectionProps) {
   const { fields, append, remove, update } = useFieldArray({
     control,
     name,
@@ -286,7 +306,27 @@ function RoleSection({ control, name, label, options }: RoleSectionProps) {
               variant="ghost"
               size="icon"
               className="h-9 w-9 text-muted-foreground hover:text-destructive"
-              onClick={() => remove(index)}
+              onClick={async () => {
+                const fieldValue = field as unknown as Option;
+
+                // value 就是数据库记录ID（从 mapToOption 设置的）
+                const dbId = fieldValue.value ? Number(fieldValue.value) : NaN;
+
+                if (!isNaN(dbId)) {
+                  // 有有效的数据库ID，调用API删除
+                  try {
+                    await onDelete.mutateAsync(dbId);
+                    toast.success("删除成功");
+                    remove(index);
+                  } catch (error: any) {
+                    const errorMessage = error?.data?.error || "删除失败";
+                    toast.error(errorMessage);
+                  }
+                } else {
+                  // 新添加的记录，直接从表单移除
+                  remove(index);
+                }
+              }}
             >
               <Trash2 className="w-4 h-4" />
             </Button>

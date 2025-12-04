@@ -15,3 +15,8 @@ export function getAllDutyPersons() {
 export function createDutySchedule(data: any) {
   return request.post(API_SERVICE.dutySchedule.dutySchedule, data);
 }
+
+//删除值班记录（按 ID）
+export function deleteDutySchedule(id: number) {
+  return request.delete(`${API_SERVICE.dutySchedule.dutySchedule}/${id}`);
+}

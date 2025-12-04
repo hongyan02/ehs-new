@@ -10,11 +10,21 @@ export interface LoginResponse {
   msg: string;
   code: number;
   token: string;
+  user: {
+    name: string;
+    employeeId: string;
+    permissions: string[];
+  };
 }
 
 export interface LoginSuccess {
   msg: string;
   token: string;
+  user: {
+    name: string;
+    employeeId: string;
+    permissions: string[];
+  };
 }
 // 后端原始响应结构
 export interface RawUserInfoResponse {
@@ -69,6 +79,7 @@ export async function getLogin(params: LoginParams) {
   return {
     msg: data.msg,
     token: data.token,
+    user: (data as any).user, // Type assertion needed if LoginResponse doesn't have user yet, or update LoginResponse
   };
 }
 
