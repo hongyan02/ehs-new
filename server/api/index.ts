@@ -8,8 +8,12 @@ import applicationRoute from "./goods/application/route";
 import applicationDetailRoute from "./goods/applicationDetail/route";
 import materialLogRoute from "./goods/materialLog/route";
 import authRoute from "./auth/route";
+import { customLogger } from "../middleware/logger";
 
 const app = new Hono().basePath("/api");
+
+// 应用日志中间件
+app.use("*", customLogger());
 
 app.route("/auth", authRoute);
 
