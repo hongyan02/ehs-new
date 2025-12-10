@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getDutySchedule, getAllDutyPersons, createDutySchedule, deleteDutySchedule } from "./api";
+import { getDutySchedule, getAllDutyPersons, createDutySchedule, deleteDutySchedule, updateDutySchedule } from "./api";
 import type { AxiosResponse } from "axios";
 
 export type DutyScheduleQuery = {
@@ -55,6 +55,17 @@ export const useCreateDutySchedule = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createDutySchedule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dutySchedule"] });
+    },
+  });
+};
+
+export const useUpdateDutySchedule = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) =>
+      updateDutySchedule(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dutySchedule"] });
     },

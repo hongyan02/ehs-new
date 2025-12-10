@@ -25,6 +25,7 @@ import {
   useDutyPersons,
   useDeleteDutyPerson,
   useCreateDutyPerson,
+  useUpdateDutyPerson,
   type DutyPersonData,
   type DutyPersonPayload,
 } from "./query";
@@ -36,6 +37,7 @@ export default function DutyPersonView() {
   const [pageSize] = useState(10);
   const [searchParams, setSearchParams] = useState<SearchFormData>({});
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editing, setEditing] = useState<DutyPersonData | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
   // 查询数据
@@ -49,6 +51,8 @@ export default function DutyPersonView() {
   const deleteMutation = useDeleteDutyPerson();
   // 创建mutation
   const createMutation = useCreateDutyPerson();
+  // 更新mutation
+  const updateMutation = useUpdateDutyPerson();
 
   const handleSearch = (params: SearchFormData) => {
     setSearchParams(params);
@@ -61,8 +65,8 @@ export default function DutyPersonView() {
   };
 
   const handleEdit = (person: DutyPersonData) => {
-    // TODO: 实现编辑功能
-    console.log("编辑人员:", person);
+    setEditing(person);
+    setIsCreateOpen(true);
   };
 
   const handleDelete = (id: number) => {
@@ -77,18 +81,25 @@ export default function DutyPersonView() {
       toast.success("删除成功");
       setDeleteId(null);
     } catch (error) {
+      console.error(error);
       toast.error("删除失败");
     }
   };
 
-  const handleCreate = async (data: DutyPersonPayload) => {
+  const handleSubmit = async (data: DutyPersonPayload) => {
     try {
-      await createMutation.mutateAsync(data);
+      if (editing?.id) {
+        await updateMutation.mutateAsync({ id: editing.id, data });
+        toast.success("修改成功");
+      } else {
+        await createMutation.mutateAsync(data);
+        toast.success("创建成功");
+      }
       setIsCreateOpen(false);
-      toast.success("创建成功");
+      setEditing(null);
     } catch (error) {
       console.error(error);
-      toast.error("创建失败");
+      toast.error(editing ? "修改失败" : "创建失败");
     }
   };
 
@@ -100,7 +111,14 @@ export default function DutyPersonView() {
           <SearchForm onSearch={handleSearch} onReset={handleReset} />
         </div>
         <div className="ml-auto">
-          <Button onClick={() => setIsCreateOpen(true)}>新增人员</Button>
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setIsCreateOpen(true);
+            }}
+          >
+            新增人员
+          </Button>
         </div>
       </div>
 
@@ -129,16 +147,27 @@ export default function DutyPersonView() {
       )}
 
       {/* 新增人员弹窗 */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      <Dialog
+        open={isCreateOpen}
+        onOpenChange={(open) => {
+          setIsCreateOpen(open);
+          if (!open) setEditing(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>新增值班人员</DialogTitle>
+          <DialogTitle>{editing ? "编辑值班人员" : "新增值班人员"}</DialogTitle>
           </DialogHeader>
           <div className="mt-4">
             <PersonForm
-              onSubmit={handleCreate}
-              isLoading={createMutation.isPending}
-              onCancel={() => setIsCreateOpen(false)}
+              key={editing?.id ?? "create"}
+              defaultValues={editing || undefined}
+              onSubmit={handleSubmit}
+              isLoading={createMutation.isPending || updateMutation.isPending}
+              onCancel={() => {
+                setEditing(null);
+                setIsCreateOpen(false);
+              }}
             />
           </div>
         </DialogContent>

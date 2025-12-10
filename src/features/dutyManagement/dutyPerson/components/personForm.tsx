@@ -25,7 +25,7 @@ const formSchema = z.object({
   no: z.string().min(1, "请输入工号"),
   position: z.string().optional(),
   shift: z.string(), // Select value is string
-  phone: z.string().optional(),
+  phone: z.string().min(1, "请输入手机号"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -59,8 +59,8 @@ export default function PersonForm({
     handleSubmit,
     control,
     setValue,
-    formState: { errors },
-  } = useForm<FormValues>({
+  formState: { errors },
+} = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: defaultValues?.name || "",
@@ -87,7 +87,7 @@ export default function PersonForm({
       no: values.no,
       position: values.position || null,
       shift: Number(values.shift),
-      phone: values.phone || null,
+      phone: values.phone,
     });
   };
 
@@ -192,6 +192,11 @@ export default function PersonForm({
           手机号
         </label>
         <Input placeholder="请输入手机号" {...register("phone")} />
+        {errors.phone && (
+          <p className="text-sm font-medium text-red-500">
+            {errors.phone.message}
+          </p>
+        )}
       </div>
 
       <div className="flex justify-end gap-2 pt-4">

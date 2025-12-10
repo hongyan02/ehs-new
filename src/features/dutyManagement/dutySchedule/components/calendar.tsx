@@ -5,7 +5,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 // import { CalendarApi } from "@fullcalendar/core";
-import { DutyScheduleItem, useCreateDutySchedule } from "../query/index";
+import { DutyScheduleItem, useCreateDutySchedule, useUpdateDutySchedule } from "../query/index";
 import { cn } from "@/utils/index";
 import zhCnLocale from "@fullcalendar/core/locales/zh-cn";
 import type { EventContentArg } from "@fullcalendar/core";
@@ -29,6 +29,14 @@ export default function Calendar({
   const [selectedDate, setSelectedDate] = useState<string>("");
 
   const createMutation = useCreateDutySchedule();
+  const updateMutation = useUpdateDutySchedule();
+
+  const roleLabelMap: Record<string, string> = {
+    dutyLeader: "值班领导",
+    shiftCadre: "带班干部",
+    safetyManager: "安全管理人员",
+    safetyOfficer: "安全员",
+  };
 
   //后翻页
   // function goNext() {
@@ -94,19 +102,28 @@ export default function Calendar({
 
   const handleSaveSchedule = async (formData: any) => {
     // 转换表单数据为API所需格式
-    const scheduleItems: any[] = [];
+    const toCreate: any[] = [];
+    const toUpdate: { id: number; data: any }[] = [];
 
     // 处理白班数据
     const dayShift = formData.day;
     Object.entries(dayShift).forEach(([role, employees]: [string, any]) => {
       (employees || []).forEach((emp: any) => {
-        scheduleItems.push({
+        const payload = {
           date: selectedDate,
           shift: 0,
           name: emp.label,
           no: emp.no,
-          position: emp.position,
-        });
+          position: emp.position || emp.role || roleLabelMap[role] || "",
+        };
+        if (emp.scheduleId) {
+          const idNum = Number(emp.scheduleId);
+          if (!Number.isNaN(idNum)) {
+            toUpdate.push({ id: idNum, data: payload });
+            return;
+          }
+        }
+        toCreate.push(payload);
       });
     });
 
@@ -114,19 +131,30 @@ export default function Calendar({
     const nightShift = formData.night;
     Object.entries(nightShift).forEach(([role, employees]: [string, any]) => {
       (employees || []).forEach((emp: any) => {
-        scheduleItems.push({
+        const payload = {
           date: selectedDate,
           shift: 1,
           name: emp.label,
           no: emp.no,
-          position: emp.position,
-        });
+          position: emp.position || emp.role || roleLabelMap[role] || "",
+        };
+        if (emp.scheduleId) {
+          const idNum = Number(emp.scheduleId);
+          if (!Number.isNaN(idNum)) {
+            toUpdate.push({ id: idNum, data: payload });
+            return;
+          }
+        }
+        toCreate.push(payload);
       });
     });
 
     // 调用API保存
     try {
-      for (const item of scheduleItems) {
+      for (const item of toUpdate) {
+        await updateMutation.mutateAsync(item);
+      }
+      for (const item of toCreate) {
         await createMutation.mutateAsync(item);
       }
       toast.success("排班保存成功");

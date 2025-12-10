@@ -18,17 +18,24 @@ import { toast } from "sonner";
 
 type ScheduleFormValues = {
   day: {
-    dutyLeader: Option[];
-    shiftCadre: Option[];
-    safetyManager: Option[];
-    safetyOfficer: Option[];
+    dutyLeader: ScheduleOption[];
+    shiftCadre: ScheduleOption[];
+    safetyManager: ScheduleOption[];
+    safetyOfficer: ScheduleOption[];
   };
   night: {
-    dutyLeader: Option[];
-    shiftCadre: Option[];
-    safetyManager: Option[];
-    safetyOfficer: Option[];
+    dutyLeader: ScheduleOption[];
+    shiftCadre: ScheduleOption[];
+    safetyManager: ScheduleOption[];
+    safetyOfficer: ScheduleOption[];
   };
+};
+
+type ScheduleOption = Option & {
+  scheduleId?: string; // 排班记录ID
+  position?: string;
+  no?: string;
+  role?: string;
 };
 
 type ScheduleDialogProps = {
@@ -49,7 +56,7 @@ export function ScheduleDialog({
   const { data: allPersons } = useAllDutyPersons();
   const deleteMutation = useDeleteDutySchedule();
 
-  const employeeOptions: Option[] = useMemo(() => {
+  const employeeOptions: ScheduleOption[] = useMemo(() => {
     return (allPersons ?? []).map((p: any) => ({
       value: String(p.id),
       label: p.name,
@@ -104,7 +111,7 @@ export function ScheduleDialog({
           (item) => String(item.shift) === "1",
         );
 
-        const mapToOption = (item: DutyScheduleItem): Option => {
+        const mapToOption = (item: DutyScheduleItem): ScheduleOption => {
           const found =
             employeeOptions.find(
               (opt) => opt.no === item.no || opt.label === item.name,
@@ -114,18 +121,18 @@ export function ScheduleDialog({
           if (found) {
             const result = {
               ...found,
-              value: String(item.id), // 使用排班记录ID作为value
-              id: String(item.id), // 保持ID一致
+              scheduleId: String(item.id), // 排班记录ID
             };
             return result;
           }
 
           const result = {
-            value: String(item.id), // 使用排班记录ID作为value
+            value: found?.value ?? item.no ?? item.name ?? String(item.id),
             label: item.name,
             position: item.position,
             no: item.no || "",
-            id: String(item.id),
+            scheduleId: String(item.id),
+            role: item.position,
           };
           return result;
         };
@@ -156,6 +163,7 @@ export function ScheduleDialog({
           },
           night: {
             dutyLeader: nightRoles.dutyLeader,
+            shiftCadre: nightRoles.shiftCadre,
             safetyManager: nightRoles.safetyManager,
             safetyOfficer: nightRoles.safetyOfficer,
           },
@@ -191,6 +199,7 @@ export function ScheduleDialog({
                 label="值班领导"
                 options={employeeOptions}
                 onDelete={deleteMutation}
+                roleKey="dutyLeader"
               />
               <RoleSection
                 control={control}
@@ -198,6 +207,7 @@ export function ScheduleDialog({
                 label="带班干部"
                 options={employeeOptions}
                 onDelete={deleteMutation}
+                roleKey="shiftCadre"
               />
               <RoleSection
                 control={control}
@@ -205,6 +215,7 @@ export function ScheduleDialog({
                 label="安全管理人员"
                 options={employeeOptions}
                 onDelete={deleteMutation}
+                roleKey="safetyManager"
               />
               <RoleSection
                 control={control}
@@ -212,6 +223,7 @@ export function ScheduleDialog({
                 label="安全员"
                 options={employeeOptions}
                 onDelete={deleteMutation}
+                roleKey="safetyOfficer"
               />
             </div>
 
@@ -228,6 +240,7 @@ export function ScheduleDialog({
                 label="值班领导"
                 options={employeeOptions}
                 onDelete={deleteMutation}
+                roleKey="dutyLeader"
               />
               <RoleSection
                 control={control}
@@ -235,6 +248,7 @@ export function ScheduleDialog({
                 label="带班干部"
                 options={employeeOptions}
                 onDelete={deleteMutation}
+                roleKey="shiftCadre"
               />
               <RoleSection
                 control={control}
@@ -242,6 +256,7 @@ export function ScheduleDialog({
                 label="安全管理人员"
                 options={employeeOptions}
                 onDelete={deleteMutation}
+                roleKey="safetyManager"
               />
               <RoleSection
                 control={control}
@@ -249,6 +264,7 @@ export function ScheduleDialog({
                 label="安全员"
                 options={employeeOptions}
                 onDelete={deleteMutation}
+                roleKey="safetyOfficer"
               />
             </div>
           </div>
@@ -273,15 +289,27 @@ type RoleSectionProps = {
   control: Control<ScheduleFormValues>;
   name: any; // Path to the array
   label: string;
-  options: Option[];
+  options: ScheduleOption[];
   onDelete: any; // Delete mutation
+  roleKey: keyof typeof ROLE_POSITION_MAP;
 };
 
-function RoleSection({ control, name, label, options, onDelete }: RoleSectionProps) {
+const ROLE_POSITION_MAP = {
+  dutyLeader: "值班领导",
+  shiftCadre: "带班干部",
+  safetyManager: "安全管理人员",
+  safetyOfficer: "安全员",
+} as const;
+
+function RoleSection({ control, name, label, options, onDelete, roleKey }: RoleSectionProps) {
   const { fields, append, remove, update } = useFieldArray({
     control,
     name,
   });
+
+  const filteredOptions = options.filter(
+    (opt) => !opt.position || opt.position === ROLE_POSITION_MAP[roleKey],
+  );
 
   return (
     <div className="space-y-2">
@@ -304,11 +332,19 @@ function RoleSection({ control, name, label, options, onDelete }: RoleSectionPro
           <div key={field.id} className="flex items-center gap-2">
             <div className="flex-1">
               <AutoComplete
-                options={options}
-                value={field as unknown as Option}
-                onValueChange={(val) => update(index, val)}
+                options={filteredOptions}
+                value={field as unknown as ScheduleOption}
+                onValueChange={(val) =>
+                  update(index, {
+                    ...val,
+                    scheduleId: (field as unknown as ScheduleOption).scheduleId,
+                    position: val.position ?? (field as unknown as ScheduleOption).position,
+                    no: val.no ?? (field as unknown as ScheduleOption).no,
+                    role: ROLE_POSITION_MAP[roleKey],
+                  })
+                }
                 placeholder={`选择${label}`}
-                emptyMessage="未找到人员"
+                emptyMessage="未找到符合岗位的人员"
               />
             </div>
             <Button
@@ -317,10 +353,10 @@ function RoleSection({ control, name, label, options, onDelete }: RoleSectionPro
               size="icon"
               className="h-9 w-9 text-muted-foreground hover:text-destructive"
               onClick={async () => {
-                const fieldValue = field as unknown as Option;
-
-                // value 就是数据库记录ID（从 mapToOption 设置的）
-                const dbId = fieldValue.value ? Number(fieldValue.value) : NaN;
+                const fieldValue = field as unknown as ScheduleOption;
+                const dbId = fieldValue.scheduleId
+                  ? Number(fieldValue.scheduleId)
+                  : NaN;
 
                 if (!isNaN(dbId)) {
                   // 有有效的数据库ID，调用API删除
