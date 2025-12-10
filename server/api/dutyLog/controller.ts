@@ -6,6 +6,7 @@ import {
     createDutyLog,
     updateDutyLog,
     deleteDutyLog,
+    getMissingDutyLogs,
 } from "./services";
 
 // 查询参数校验
@@ -42,6 +43,17 @@ const updateDutyLogSchema = z.object({
     log: z.string().optional(),
     todo: z.string().optional(),
 });
+
+// 未填写日志筛查参数校验
+const dutyLogInspectionSchema = z
+    .object({
+        startDate: z.string().min(1, "开始日期不能为空"),
+        endDate: z.string().min(1, "结束日期不能为空"),
+    })
+    .refine(
+        (data) => data.startDate <= data.endDate,
+        "开始日期不能大于结束日期"
+    );
 
 /**
  * 获取值班日志列表
@@ -160,6 +172,24 @@ export const deleteDutyLogController = async (c: Context) => {
         await deleteDutyLog(id);
         return c.json({ success: true, message: "删除成功" });
     } catch (error) {
+        return c.json({ success: false, message: "服务器错误" }, 500);
+    }
+};
+
+/**
+ * 查询日期范围内未按时填写的值班日志
+ */
+export const dutyLogInspectionController = async (c: Context) => {
+    try {
+        const body = await c.req.json();
+        const params = dutyLogInspectionSchema.parse(body);
+        const result = await getMissingDutyLogs(params);
+        return c.json({ success: true, data: result });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return c.json({ success: false, message: error.issues }, 400);
+        }
+        console.error("dutyLogInspectionController error:", error);
         return c.json({ success: false, message: "服务器错误" }, 500);
     }
 };

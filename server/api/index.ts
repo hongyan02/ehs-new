@@ -10,8 +10,11 @@ import materialLogRoute from "./goods/materialLog/route";
 import authRoute from "./auth/route";
 import permissionsRoute from "./system/permissions/route";
 import pointRoute from "./point/route";
-import webhookRoute from "./webhook/route"
+import webhookRoute from "./webhook/route";
 import { customLogger } from "../middleware/logger";
+import wxWorkDutyLogRoute from "./wxWork/dutyLog/route";
+import schedulerRoute from "./scheduler/route";
+import { startScheduler } from "../utils/scheduler";
 
 const app = new Hono().basePath("/api");
 
@@ -20,6 +23,7 @@ app.use("*", customLogger());
 
 app.route("/auth", authRoute);
 
+app.route("/webhook", webhookRoute);
 app.route("/webhook", webhookDutyLogRoute);
 app.route("/dutyLog", dutyLogRoute);
 app.route("/dutyPerson", dutyPersonRoute);
@@ -30,7 +34,11 @@ app.route("/goods/applicationDetail", applicationDetailRoute);
 app.route("/goods/materialLog", materialLogRoute);
 app.route("/system/permissions", permissionsRoute);
 app.route("/point", pointRoute);
-app.route("/webhook", webhookRoute);
+app.route("/wxWork/dutyLog", wxWorkDutyLogRoute);
+app.route("/scheduler", schedulerRoute);
+
+// 启动定时任务调度器
+startScheduler();
 
 export { app };
 

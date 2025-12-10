@@ -48,7 +48,9 @@ export async function proxy(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   if (!token || !Ptoken) {
     // Redirect to login if no token
-    return NextResponse.redirect(new URL("/login", request.url));
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname + request.nextUrl.search);
+    return NextResponse.redirect(loginUrl);
   }
 
   try {
@@ -76,7 +78,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   } catch (e) {
     // Token invalid or expired
-    return NextResponse.redirect(new URL("/login", request.url));
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname + request.nextUrl.search);
+    return NextResponse.redirect(loginUrl);
   }
 }
 

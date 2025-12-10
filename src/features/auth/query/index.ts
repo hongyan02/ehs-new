@@ -1,4 +1,4 @@
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { LoginParams, LoginSuccess } from "./api";
 import { getLogin, getUserInfo, getLogout, getUserList } from "./api";
@@ -8,6 +8,7 @@ import Cookies from "js-cookie";
 export function useLogin() {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const setInfo = useInfoStore((s) => s.setInfo);
   return useMutation<LoginSuccess, Error, LoginParams>({
     mutationFn: (params) => getLogin(params),
@@ -27,7 +28,8 @@ export function useLogin() {
           // deptName: userInfo.deptName, // API response doesn't have deptName currently, might need to fetch if needed
         });
         // 3. 拿到用户信息后再跳转
-        router.push("/");
+        const redirect = searchParams.get("redirect");
+        router.push(redirect ? decodeURIComponent(redirect) : "/");
       } catch (e) {
         console.error("获取用户信息失败:", e);
         // message.error("登录成功，但获取用户信息失败");

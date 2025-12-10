@@ -17,6 +17,8 @@ export const API_SERVICE = {
     //值班日志
     dutyLog: {
         dutyLog: process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/dutyLog", //CRUD操作
+        inspection:
+            process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/dutyLog/Inspection", //值班日志稽查
     },
     dutyPerson: {
         dutyPerson: process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/dutyPerson", //值班人员CRUD
@@ -56,5 +58,8 @@ export const API_SERVICE = {
         events: process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/point/events",
         logs: process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/point/logs",
         ranking: process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/point/ranking",
+    },
+    scheduler: {
+        task: process.env.NEXT_PUBLIC_API_CONFIG_LOCAL + "/scheduler/task",
     },
 };

@@ -411,3 +411,39 @@ export const webhookConfig = sqliteTable("webhook_config", {
   //更新时间
   updatedAt: text("updated_at").notNull(), // 格式：YYYY-MM-DD HH:mm:ss
 });
+
+// 定时任务表
+export const schedulerTask = sqliteTable("scheduler_task", {
+  // 自增主键ID
+  id: integer("id").primaryKey({ autoIncrement: true }),
+
+  // 任务名称
+  name: text("name").notNull(),
+
+  // 任务唯一标识，用于匹配具体执行器
+  jobKey: text("job_key").notNull(),
+
+  // cron 表达式，允许为空（仅手动触发）
+  cron: text("cron"),
+
+  // 是否启用（1=启用，0=禁用）
+  enabled: integer("enabled").notNull().default(1),
+
+  // 扩展配置，JSON 字符串
+  payload: text("payload"),
+
+  // 上次执行时间
+  lastRunAt: text("last_run_at"),
+
+  // 上次执行状态：success / failed
+  lastStatus: text("last_status"),
+
+  // 上次错误信息
+  lastError: text("last_error"),
+
+  // 创建时间
+  createdAt: text("created_at").notNull(), // 格式：YYYY-MM-DD HH:mm:ss
+
+  // 更新时间
+  updatedAt: text("updated_at").notNull(), // 格式：YYYY-MM-DD HH:mm:ss
+});

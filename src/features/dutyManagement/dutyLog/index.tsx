@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import SearchForm, { type SearchFormData } from "./components/searchForm";
+import type { SearchFormData } from "./components/searchForm";
+import dynamic from "next/dynamic";
+
+const SearchForm = dynamic(() => import("./components/searchForm"), {
+  ssr: false,
+});
 import LogTable from "./components/logTable";
 import CustomPagination from "@/components/CustomPagination";
 import {
