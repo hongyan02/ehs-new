@@ -138,12 +138,28 @@ export default function PersonForm({
         )}
       </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-          职位
-        </label>
-        <Input placeholder="请输入职位" {...register("position")} />
-      </div>
+  <div className="space-y-2">
+    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+      职位
+    </label>
+    <Controller
+      control={control}
+      name="position"
+      render={({ field }) => (
+        <Select onValueChange={field.onChange} defaultValue={field.value ?? ""}>
+          <SelectTrigger>
+            <SelectValue placeholder="选择职位" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="值班领导">值班领导</SelectItem>
+            <SelectItem value="带班干部">带班干部</SelectItem>
+            <SelectItem value="安全管理人员">安全管理人员</SelectItem>
+            <SelectItem value="安全员">安全员</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
+    />
+  </div>
 
       <div className="space-y-2">
         <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">

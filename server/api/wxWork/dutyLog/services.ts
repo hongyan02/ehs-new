@@ -73,9 +73,7 @@ export const sendDutyLeaderTextMessage = async ({
     const leader = await getTodayShiftLeader(normalizedShift);
     if (!leader) {
         throw new DutyLeaderNotFoundError(
-            normalizedShift === 0
-                ? "未找到当天白班值班领导排班"
-                : "未找到当天夜班值班领导排班"
+            normalizedShift === 0 ? "未找到当天白班值班领导排班" : "未找到当天夜班值班领导排班"
         );
     }
 
@@ -95,17 +93,16 @@ export const sendDutyLeaderTextMessage = async ({
     url.searchParams.set("access_token", accessToken);
 
     const fallbackContent = [
-        "【值班提醒】",
-        `日期：${leader.date}`,
-        `班次：${normalizedShift === 0 ? "白班" : "夜班"}`,
-        `姓名：${leader.name}`,
-        `工号：${leader.no}`,
-    ]
-        .filter(Boolean)
-        .join("\n");
+        `${leader.name}，您好！`,
+        "根据《8BU 领导值班管理规定》要求，值班领导需在当日值班期间完成以下工作：检查本单位安全生产情况，纠正违章作业，督查生产纪律。",
+        "请您于值班当日及时通过在线值班系统填写值班日志，记录值班期间的工作内容及问题处理情况。",
+        "请尽快登录系统完成日志提交，确保履职记录完整留存。感谢您对安全生产工作的支持与配合！",
+        "填写地址：http://10.22.161.62:802/dutyManagement/dutyLog",
+        `登录账号：${leader.no}`,
+        "密码：(同综合管理平台)",
+    ].join("\n");
 
-    const contentToSend =
-        content && content.trim().length > 0 ? content.trim() : fallbackContent;
+    const contentToSend = content && content.trim().length > 0 ? content.trim() : fallbackContent;
 
     const payload: SendMessagePayload = {
         touser: leader.no.trim(),
